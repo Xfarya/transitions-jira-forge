@@ -1,5 +1,7 @@
 import ForgeUI, { render, ProjectPage, Fragment, Text, useState, Form, TextField, Button } from '@forge/ui';
 import api, { route } from '@forge/api';
+import { CSVLink } from 'react-csv';
+import React from 'react';
 
 const fetchChangelogs = async (ticketId) => {
   const response = await api.asUser().requestJira(route`/rest/api/3/issue/${ticketId}/changelog`, {
@@ -19,18 +21,18 @@ const fetchChangelogs = async (ticketId) => {
   return changelogs;
 };
 
-// can see logs if you have docker/run 'forge tunnel'
-const printChangelogsInCsvFormat = (changelogs) => {
-  let csvContent = 'Timestamp,From,To\n';
-  changelogs.forEach((log) => {
-    csvContent += `${log.timestamp},${log.from},${log.to}\n`;
-  });
-  console.log('Changelogs in CSV format:');
-  console.log(csvContent);
+const generateCsvContent = (changelogs) => {
+  const csvData = [
+    ['Timestamp', 'From', 'To'], // Header row
+    ...changelogs.map((log) => [log.timestamp, log.from, log.to]), // Data rows
+  ];
+  return csvData;
 };
 
 const App = () => {
   const [changelogs, setChangelogs] = useState([]);
+  const [ticketId, setTicketId] = useState('');
+  const [changelogsCsv, setChangelogsCsv] = useState(null);
 
   const handleSubmit = async (formData) => {
     const { ticketId } = formData;
@@ -39,12 +41,16 @@ const App = () => {
       try {
         const fetchedChangelogs = await fetchChangelogs(ticketId);
         setChangelogs(fetchedChangelogs);
-
-        printChangelogsInCsvFormat(fetchedChangelogs);
+        setTicketId(ticketId); // Store ticketId in the state
       } catch (error) {
-        console.error('Error fetching or exporting data:', error);
+        console.error('Error fetching data:', error);
       }
     }
+  };
+
+  const handleDownload = () => {
+    const csvData = generateCsvContent(changelogs);
+    setChangelogsCsv(csvData);
   };
 
   return (
@@ -70,7 +76,16 @@ const App = () => {
 
       <Form onSubmit={handleSubmit}>
         <TextField name="ticketId" label="Ticket ID" />
-        {changelogs.length > 0 && <Button text="Export to Google Sheets" type="submit" />}
+        {changelogs.length > 0 && (
+          <>
+            {changelogsCsv && (
+              <CSVLink data={changelogsCsv} filename="changelogs.csv">
+                Download CSV
+              </CSVLink>
+            )}
+            <Button text="Generate CSV" onClick={handleDownload} />
+          </>
+        )}
       </Form>
     </Fragment>
   );
