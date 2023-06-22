@@ -1,0 +1,18 @@
+modules:
+  jira:projectPage:
+    - key: transition-test-hello-world-project-page
+      function: main
+      title: transition-test
+  function:
+    - key: main
+      handler: index.run
+permissions:
+  scopes:
+    - storage:app
+    - read:confluence-props
+    - write:confluence-props
+    - write:confluence-file
+    - read:jira-work
+    - write:jira-work
+app:
+  id: ari:cloud:ecosystem::app/7a02f2da-5c1a-4d41-9029-3f151fb85022
